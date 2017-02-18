@@ -3,6 +3,9 @@
 // Defines a strip of LEDs
 typedef struct {
     CRGB* pixels;
+    CHSV* colors;
+    //uint8_t* sat;
+    //uint8_t* val;
     int length;
     int pin;
 } Strip;
