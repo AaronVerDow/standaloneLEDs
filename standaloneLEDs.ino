@@ -100,8 +100,7 @@ int tracer_pixel = 0;
 
 // Define animations here.  Make sure case statements are in order
 void write_animation() {
-    check_for_button_presses(outer_animation);
-    fade(outer_animation);
+    check_for_button_presses_no_fade(outer_animation);
     // Watch the case statement numbers
    switch (outer_animation.counter) {
         case 0:
@@ -129,6 +128,7 @@ void write_animation() {
         case 2:
             //off
             write_group(inner, CRGB::Black);
+            write_group(outer, CRGB::Black);
             break;
         default:
             animation_init = 0;
@@ -366,6 +366,17 @@ void fade_out() {
             brightness = 0;
         }
         FastLED.setBrightness(brightness);
+    }
+}
+
+void check_for_button_presses_no_fade(Cycle_Actions &action) {
+    if (digitalRead(action.button) == HIGH) {
+        if (action.lock == false) {
+            action.lock = true;
+            ++action.counter;
+        }
+    } else {
+        action.lock = false;
     }
 }
 
