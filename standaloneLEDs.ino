@@ -15,7 +15,8 @@
 #include "led_data.h"
 
 // Pin for button to cycle through animations
-const int animation_button = 4;
+const int animation_button = 20;
+const int outer_button = 21;
 
 // This change in the loop, editing does nothing
 int hue = 0;
@@ -58,6 +59,7 @@ const CRGB party_off = CRGB::Black;
 CRGB party_hard_color = party_off;
 
 Cycle_Actions animation = {animation_button, 0, false, false};
+Cycle_Actions outer_animation = {outer_button, 0, false, false};
 
 int offset = 0;
 int candy_color = CRGB(dim,0,0);
@@ -66,7 +68,8 @@ void setup() {
     // Pull in LED data
     led_data_setup();
     // Setup buttons
-    //pinMode(animation_button, INPUT);
+    pinMode(animation_button, INPUT);
+    pinMode(outer_button, INPUT);
     // Failsafe for Teensy programming
     delay(1000);
 }
@@ -97,21 +100,41 @@ int tracer_pixel = 0;
 
 // Define animations here.  Make sure case statements are in order
 void write_animation() {
-    //check_for_button_presses(animation);
-    fade();
+    check_for_button_presses(outer_animation);
+    fade(outer_animation);
     // Watch the case statement numbers
-    switch (animation.counter) {
+   switch (outer_animation.counter) {
         case 0:
-            delay_strip_and_pixel(all, hue, saturation, brightness, 1, 2);
+            delay_strip_and_pixel(outer, hue, saturation, brightness, 1, 2);
             break;
         case 1:
+            write_group(outer, CRGB(dim,dim,dim));
+            break;
+        case 2:
+            write_group(outer, CRGB::Black);
+            break;
+        default:
+            outer_animation.counter = 0;
+    }
+
+    check_for_button_presses(animation);
+    fade(animation);
+    switch (animation.counter) {
+        case 0:
+            delay_strip_and_pixel(inner, hue, saturation, brightness, 1, 2);
+            break;
+        case 1:
+            write_group(inner, CRGB(dim,dim,dim));
+            break;
+        case 2:
             //off
-            write_group(all, CRGB::Black);
+            write_group(inner, CRGB::Black);
             break;
         default:
             animation_init = 0;
             animation.counter = 0;
     }
+ 
 }
 
 CRGB tracer_color = CRGB::White;
@@ -314,15 +337,15 @@ void christmas(Group group) {
 
 // Supporting methods
 
-void fade() {
-    if (animation.changed) {
+void fade(Cycle_Actions &action) {
+    if (action.changed) {
         fade_out();
     } else if (brightness < 255) {
         fade_in();
     }
     if (brightness == 0) {
-        animation.changed = false;
-        ++animation.counter;
+        action.changed = false;
+        ++action.counter;
     }   
 }
 
