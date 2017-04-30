@@ -15,7 +15,7 @@
 #include "led_data.h"
 
 // Pin for button to cycle through animations
-const int animation_button = 8;
+const int animation_button = 4;
 
 // This change in the loop, editing does nothing
 int hue = 0;
@@ -26,7 +26,7 @@ int counter = 0;
 // Hue cycle (rainbow)
 // Minimum value = 1
 // higher = slow down hue change
-int hue_cycles_per_change = 2;
+int hue_cycles_per_change = 8;
 // higher = speed up hue change
 int hue_changes_per_cycle = 1;
 // At least one of these variables must be 1
@@ -45,7 +45,7 @@ int brightness = 255;
 int fade_speed = 6;
 
 // Value for dimmed white 0-255
-const int dim = 80;
+const int dim = 60;
 
 // Values for party hard (seizure) mode
 // Currently not used
@@ -58,6 +58,9 @@ const CRGB party_off = CRGB::Black;
 CRGB party_hard_color = party_off;
 
 Cycle_Actions animation = {animation_button, 0, false, false};
+
+int offset = 0;
+int candy_color = CRGB(dim,0,0);
 
 void setup() {
     // Pull in LED data
@@ -88,6 +91,9 @@ void loop() {
     delay(10);
 }
 
+int animation_init = 0;
+int tracer_strip = 0;
+int tracer_pixel = 0;
 
 // Define animations here.  Make sure case statements are in order
 void write_animation() {
@@ -96,26 +102,40 @@ void write_animation() {
     // Watch the case statement numbers
     switch (animation.counter) {
         case 0:
-            //multi rainbow
             delay_strip_and_pixel(all, hue, saturation, brightness, 1, 2);
             break;
         case 1:
-            //solid color rainbow
-            delay_strip(all, hue, saturation, brightness);
-            break;
-        case 2:
-            //dim white
-            write_group(all, CRGB(dim,dim,dim));
-            break;
-        case 3:
             //off
             write_group(all, CRGB::Black);
             break;
         default:
+            animation_init = 0;
             animation.counter = 0;
     }
 }
 
+CRGB tracer_color = CRGB::White;
+
+void tracer(Group group) {
+    int max_pixel = group.strips[tracer_strip].length;
+    tracer_pixel += 1;
+    if ( tracer_pixel == max_pixel ) {
+        tracer_pixel = 0;
+        //CHSV new_color = CHSV(random(0,255), 255, 255);
+        //hsv2rgb_rainbow(new_color, tracer_color);
+        tracer_strip += 1;
+        if ( tracer_strip == group.length ) {
+            tracer_strip = 0;
+        }
+    }
+    uint8_t blends[] = { 255, 128, 32, 8, 1, 0, 0, 0, 0, 0, 0 };
+    for (int pixel = 10; pixel >= 0; pixel--) {
+        CRGB color=group.strips[tracer_strip].pixels[tracer_pixel-pixel];
+        CRGB new_color = blend(color, tracer_color, blends[pixel]);
+        group.strips[tracer_strip].pixels[tracer_pixel-pixel] = new_color;
+    }
+    
+}
 
 
 // Changes hue by multipliers on strips and pixels  (rainbow)
@@ -142,6 +162,32 @@ void delay_strip(Group group, int h, int s, int b) {
 void write_group(Group group, CRGB color) {
     for (int strip = 0; strip < group.length; strip++) {
         for (int pixel = 0; pixel < group.strips[strip].length; pixel++) {
+            group.strips[strip].pixels[pixel] = color;
+        }
+    }
+}
+
+// Used to measure strip length
+void candy_cane(Group group) {
+    int stripes = 10;
+    int toggle = 0;
+    offset += 1;
+    if ( offset == stripes ) {
+        offset = 0;
+    }
+    for (int strip = 0; strip < group.length; strip++) {
+        for (int pixel = 0; pixel < group.strips[strip].length; pixel++) {
+            CRGB color = CRGB(dim,0,0);
+            if (toggle == 1) {
+                color = CRGB(dim,dim,dim);
+            }
+            if ( pixel % stripes == 0) {
+                if (toggle == 0) {
+                    toggle = 1;
+                } else {
+                    toggle = 0;
+                }
+            }
             group.strips[strip].pixels[pixel] = color;
         }
     }
@@ -194,19 +240,6 @@ void write_blinky_white() {
     write_random_pixel(all, CRGB::Black);
 }
 
-// Failure, trying to do colorful blinky something
-void write_random_pixels() {
-    write_random_pixel(all, CHSV(random(0,255), 255, random(0,255)));
-    write_random_pixel(all, CHSV(random(0,255), 255, random(0,255)));
-    write_random_pixel(all, CHSV(random(0,255), 255, random(0,255)));
-    write_random_pixel(all, CRGB::Black);
-    write_random_pixel(all, CRGB::Black);
-    write_random_pixel(all, CRGB::Black);
-    write_random_pixel(all, CRGB::Black);
-    write_random_pixel(all, CRGB::Black);
-    write_random_pixel(all, CRGB::Black);
-}
-
 // Write to the end of a strip
 void write_end(Strip strip, int count, CRGB color) {
     for (int i=1; i<=count; i++) {
@@ -235,6 +268,48 @@ void write_random_pixel(Group group, CRGB color) {
     int strip = random(0,group.length-1);
     int pixel = random(0,group.strips[strip].length-1);
     group.strips[strip].pixels[pixel] = color;
+}
+
+
+void christmas(Group group) {
+    if ( animation_init == 0 ) {
+        for (int strip = 0; strip < group.length; strip++) {
+            for (int pixel = 0; pixel < group.strips[strip].length; pixel++) {
+                int val = random(0, 40);
+                int hue = random(66, 126);
+                if ( pixel % 8 == 0 ) {
+                    val = random(60, 255);
+                    hue = random(0,255);
+                }
+                //if ( hue > 160 and hue < 192 ) { 
+                    //hue += random(40, 50);
+                //} else if ( hue < 160 and hue > 128 ) {
+                    //hue -= random(40, 50);
+                //}
+                CHSV color = CHSV(hue, random(180, 255), val);
+                group.strips[strip].colors[pixel] = color;
+                group.strips[strip].pixels[pixel] = color;
+                //group.strips[strip].pixels[pixel] += CRBG(0,0,-100);
+            }
+        }
+        animation_init = 1;
+    } else {
+        for (int strip = 0; strip < group.length; strip++) {
+            for (int pixel = 0; pixel < group.strips[strip].length; pixel++) {
+                CHSV old = group.strips[strip].colors[pixel];
+                int hue = old.hue;
+                int sat = old.sat;
+                int val = old.val;
+
+                if ( val > 120 ) {
+                    hue += random(0,5);
+                }
+                group.strips[strip].pixels[pixel] = CHSV(hue, sat, val);
+
+                group.strips[strip].colors[pixel] = CHSV(hue, sat, old.val);
+            }
+        }
+    }
 }
 
 // Supporting methods
