@@ -47,6 +47,7 @@ int fade_speed = 6;
 
 // Value for dimmed white 0-255
 const int dim = 60;
+const int super_dim = 30;
 
 // Values for party hard (seizure) mode
 // Currently not used
@@ -107,28 +108,54 @@ void write_animation() {
             delay_strip_and_pixel(outer, hue, saturation, brightness, 1, 2);
             break;
         case 1:
-            write_group(outer, CRGB(dim,dim,dim));
+            delay_strip_and_pixel(outer, hue, saturation, dim, 1, 2);
             break;
         case 2:
+            delay_strip_and_pixel(outer, hue, saturation, super_dim, 1, 2);
+            break;
+        case 3:
+            write_group(outer, CRGB::Black);
+            break;
+        case 4:
+            delay_strip(outer, hue, saturation, brightness);
+            break;
+        case 5:
+            delay_strip(outer, hue, saturation, dim);
+            break;
+        case 6:
+            delay_strip(outer, hue, saturation, super_dim);
+            break;
+        case 7:
+            write_group(outer, CRGB::Black);
+            break;
+        case 8:
+            write_group(outer, CRGB(dim,dim,dim));
+            break;
+        case 9:
+            write_group(outer, CRGB(super_dim,super_dim,super_dim));
+            break;
+        case 10:
             write_group(outer, CRGB::Black);
             break;
         default:
             outer_animation.counter = 0;
     }
 
-    check_for_button_presses(animation);
-    fade(animation);
+    check_for_button_presses_no_fade(animation);
+    //fade(animation);
     switch (animation.counter) {
         case 0:
             delay_strip_and_pixel(inner, hue, saturation, brightness, 1, 2);
             break;
         case 1:
-            write_group(inner, CRGB(dim,dim,dim));
+            delay_strip(inner, hue, saturation, brightness);
             break;
         case 2:
+            write_group(inner, CRGB(dim,dim,dim));
+            break;
+        case 3:
             //off
             write_group(inner, CRGB::Black);
-            write_group(outer, CRGB::Black);
             break;
         default:
             animation_init = 0;
